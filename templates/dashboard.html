@@ -1,0 +1,255 @@
+{{define "dashboard.html"}}
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Sampatti</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.4.2/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-base-100">
+    <div class="navbar bg-primary text-primary-content shadow-lg">
+      <div class="navbar-start">
+        <a href="/dashboard" class="btn btn-ghost text-xl font-bold">
+          <i class="fas fa-chart-line mr-2"></i>
+          Sampatti
+        </a>
+      </div>
+      <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1">
+          <li>
+            <a href="/dashboard" class="hover:bg-primary-focus">
+              <i class="fas fa-tachometer-alt mr-2"></i>
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <a href="/accounts" class="hover:bg-primary-focus">
+              <i class="fas fa-user-cog mr-2"></i>
+              Accounts
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="navbar-end">
+        <form method="POST" action="/logout" class="inline">
+          <button type="submit" class="btn btn-ghost hover:bg-primary-focus">
+            <i class="fas fa-sign-out-alt mr-2"></i>
+            Logout
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+      {{template "dashboard_content" .}}
+    </main>
+
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content mt-auto">
+      <div>
+        <p class="font-semibold">Sampatti Investment Dashboard</p>
+        <p class="text-sm opacity-70">
+          Consolidate your Kuvera and Stockal investments
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+{{end}}
+
+{{define "dashboard_content"}}
+<div class="space-y-6">
+  <!-- Header -->
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+  >
+    <div>
+      <h1 class="text-3xl font-bold text-primary">
+        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+      </h1>
+      <p class="text-base-content opacity-70">
+        {{.Plan.Name}} - {{.User.Email}}
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/accounts/add" class="btn btn-secondary btn-sm">
+        <i class="fas fa-plus mr-2"></i>Add Account
+      </a>
+      <form method="POST" action="/fetch" class="inline">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="fas fa-sync-alt mr-2"></i>Fetch Data
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="stat bg-base-200 shadow rounded-lg">
+      <div class="stat-figure text-primary">
+        <i class="fas fa-wallet text-3xl"></i>
+      </div>
+      <div class="stat-title">Total Portfolio Value</div>
+      <div class="stat-value text-primary">
+        ₹{{if .TotalValue}}{{printf "%.2f" .TotalValue}}{{else}}0.00{{end}}
+      </div>
+      <div class="stat-desc">Across all platforms</div>
+    </div>
+
+    <div class="stat bg-base-200 shadow rounded-lg">
+      <div class="stat-figure text-secondary">
+        <i class="fas fa-link text-3xl"></i>
+      </div>
+      <div class="stat-title">Connected Accounts</div>
+      <div class="stat-value text-secondary">{{len .InvestmentAccounts}}</div>
+      <div class="stat-desc">
+        {{range .InvestmentAccounts}} {{if eq .Platform
+        "kuvera"}}🏛️{{else}}📈{{end}} {{end}}
+      </div>
+    </div>
+
+    <div class="stat bg-base-200 shadow rounded-lg">
+      <div class="stat-figure text-accent">
+        <i class="fas fa-clock text-3xl"></i>
+      </div>
+      <div class="stat-title">Last Updated</div>
+      <div class="stat-value text-accent text-sm">
+        {{if .LastFetchTime}} {{.LastFetchTime.Format "2006-01-02 15:04"}}
+        {{else}} Never {{end}}
+      </div>
+      <div class="stat-desc">Data freshness</div>
+    </div>
+  </div>
+
+  <!-- Accounts Overview -->
+  <div class="card bg-base-100 shadow-lg">
+    <div class="card-body">
+      <h2 class="card-title">
+        <i class="fas fa-user-cog mr-2"></i>Connected Accounts
+        <a href="/accounts" class="btn btn-sm btn-ghost ml-auto">
+          View All <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+      </h2>
+
+      {{if .InvestmentAccounts}}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        {{range .InvestmentAccounts}}
+        <div class="card bg-base-200 shadow">
+          <div class="card-body p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                {{if eq .Platform "kuvera"}}
+                <i class="fas fa-building text-primary"></i>
+                <span class="font-semibold">Kuvera</span>
+                {{else}}
+                <i class="fas fa-chart-bar text-secondary"></i>
+                <span class="font-semibold">Stockal</span>
+                {{end}}
+              </div>
+              <div class="badge badge-outline badge-sm">{{.Username}}</div>
+            </div>
+            <div class="text-xs text-base-content opacity-60 mt-2">
+              Added {{.CreatedAt.Format "2006-01-02"}}
+            </div>
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <div class="text-center py-8">
+        <i class="fas fa-inbox text-4xl text-base-content opacity-30 mb-4"></i>
+        <p class="text-base-content opacity-60 mb-4">
+          No accounts connected yet
+        </p>
+        <a href="/accounts/add" class="btn btn-primary">
+          <i class="fas fa-plus mr-2"></i>Add Your First Account
+        </a>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Kuvera Activity -->
+    <div class="card bg-base-100 shadow-lg">
+      <div class="card-body">
+        <h3 class="card-title">
+          <i class="fas fa-building text-primary mr-2"></i>Recent Kuvera Data
+        </h3>
+
+        {{if .LatestKuvera}}
+        <div class="space-y-2 mt-4">
+          {{range .LatestKuvera}}
+          <div
+            class="flex items-center justify-between p-3 bg-base-200 rounded"
+          >
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="text-sm">Account {{.InvestmentAccountID}}</span>
+            </div>
+            <div class="text-xs text-base-content opacity-60">
+              {{.FetchedAt.Format "01-02 15:04"}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+        {{else}}
+        <div class="text-center py-4">
+          <i
+            class="fas fa-database text-2xl text-base-content opacity-30 mb-2"
+          ></i>
+          <p class="text-sm text-base-content opacity-60">No Kuvera data yet</p>
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    <!-- Stockal Activity -->
+    <div class="card bg-base-100 shadow-lg">
+      <div class="card-body">
+        <h3 class="card-title">
+          <i class="fas fa-chart-bar text-secondary mr-2"></i>Recent Stockal
+          Data
+        </h3>
+
+        {{if .LatestStockal}}
+        <div class="space-y-2 mt-4">
+          {{range .LatestStockal}}
+          <div
+            class="flex items-center justify-between p-3 bg-base-200 rounded"
+          >
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="text-sm">Account {{.InvestmentAccountID}}</span>
+            </div>
+            <div class="text-xs text-base-content opacity-60">
+              {{.FetchedAt.Format "01-02 15:04"}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+        {{else}}
+        <div class="text-center py-4">
+          <i
+            class="fas fa-database text-2xl text-base-content opacity-30 mb-2"
+          ></i>
+          <p class="text-sm text-base-content opacity-60">
+            No Stockal data yet
+          </p>
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

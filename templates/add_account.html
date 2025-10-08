@@ -1,0 +1,250 @@
+{{define "add_account.html"}}
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Account - Sampatti</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.4.2/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-base-100">
+    <div class="navbar bg-primary text-primary-content shadow-lg">
+      <div class="navbar-start">
+        <a href="/dashboard" class="btn btn-ghost text-xl font-bold">
+          <i class="fas fa-chart-line mr-2"></i>
+          Sampatti
+        </a>
+      </div>
+      <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1">
+          <li>
+            <a href="/dashboard" class="hover:bg-primary-focus">
+              <i class="fas fa-tachometer-alt mr-2"></i>
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <a href="/accounts" class="hover:bg-primary-focus">
+              <i class="fas fa-user-cog mr-2"></i>
+              Accounts
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="navbar-end">
+        <form method="POST" action="/logout" class="inline">
+          <button type="submit" class="btn btn-ghost hover:bg-primary-focus">
+            <i class="fas fa-sign-out-alt mr-2"></i>
+            Logout
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+      {{template "add_account_content" .}}
+    </main>
+
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content mt-auto">
+      <div>
+        <p class="font-semibold">Sampatti Investment Dashboard</p>
+        <p class="text-sm opacity-70">
+          Consolidate your Kuvera and Stockal investments
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+{{end}}
+
+{{define "add_account_content"}}
+<div class="max-w-2xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-primary mb-2">
+      <i class="fas fa-plus-circle mr-2"></i>Add Investment Account
+    </h1>
+    <p class="text-base-content opacity-70">
+      Connect your Kuvera or Stockal account to start tracking
+    </p>
+  </div>
+
+  <!-- Add Account Form -->
+  <div class="card bg-base-100 shadow-lg">
+    <div class="card-body">
+      <form method="POST" class="space-y-6">
+        <!-- Platform Selection -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i class="fas fa-layer-group mr-2"></i>Platform
+            </span>
+          </label>
+          <div class="space-y-4">
+            <div
+              class="flex items-center space-x-3 p-4 border rounded-lg hover:bg-base-200"
+            >
+              <input
+                type="radio"
+                name="platform"
+                value="kuvera"
+                class="radio radio-primary"
+                required
+              />
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center"
+                >
+                  <i class="fas fa-building text-primary text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-lg">Kuvera</h3>
+                  <p class="text-sm text-base-content opacity-60">
+                    Mutual funds, gold, and more
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="flex items-center space-x-3 p-4 border rounded-lg hover:bg-base-200"
+            >
+              <input
+                type="radio"
+                name="platform"
+                value="stockal"
+                class="radio radio-secondary"
+                required
+              />
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center"
+                >
+                  <i class="fas fa-chart-bar text-secondary text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-lg">Stockal</h3>
+                  <p class="text-sm text-base-content opacity-60">
+                    US stocks and ETFs
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Username -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i class="fas fa-user mr-2"></i>Username/Email
+            </span>
+          </label>
+          <input
+            type="text"
+            name="username"
+            placeholder="Enter your login username or email"
+            class="input input-bordered w-full"
+            required
+          />
+          <label class="label">
+            <span class="label-text-alt text-base-content opacity-60">
+              Use the same credentials you use to log into the platform
+            </span>
+          </label>
+        </div>
+
+        <!-- Password -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i class="fas fa-lock mr-2"></i>Password
+            </span>
+          </label>
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            class="input input-bordered w-full"
+            required
+          />
+          <label class="label">
+            <span class="label-text-alt text-base-content opacity-60">
+              Your password is encrypted using bcrypt before storage
+            </span>
+          </label>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="alert alert-info">
+          <i class="fas fa-shield-alt"></i>
+          <div>
+            <h4 class="font-bold">Security & Privacy</h4>
+            <div class="text-sm space-y-1">
+              <p>
+                • Your credentials are encrypted using industry-standard bcrypt
+                hashing
+              </p>
+              <p>
+                • We only fetch read-only data - no trades or modifications are
+                made
+              </p>
+              <p>• Data is fetched once every 24 hours automatically</p>
+              <p>• You can delete your account connection at any time</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-control mt-8">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
+            <a href="/accounts" class="btn btn-ghost">
+              <i class="fas fa-arrow-left mr-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus mr-2"></i>Add Account
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Help Section -->
+  <div class="card bg-base-100 shadow-lg">
+    <div class="card-body">
+      <h3 class="card-title text-lg">
+        <i class="fas fa-question-circle mr-2"></i>Need Help?
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <h4 class="font-semibold mb-2">For Kuvera:</h4>
+          <ul class="text-sm space-y-1 text-base-content opacity-70">
+            <li>• Use your Kuvera email and password</li>
+            <li>• Make sure your account is active</li>
+            <li>• Two-factor authentication should be disabled temporarily</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-2">For Stockal:</h4>
+          <ul class="text-sm space-y-1 text-base-content opacity-70">
+            <li>• Use your Stockal username and password</li>
+            <li>• Ensure your account has completed KYC</li>
+            <li>• Account should be in good standing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{end}}

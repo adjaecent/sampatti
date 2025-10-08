@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sampatti - Investment Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-primary to-secondary">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full">
+            <div class="card bg-base-100 shadow-2xl">
+                <div class="card-body text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-chart-line text-6xl text-primary mb-4"></i>
+                        <h1 class="text-4xl font-bold text-primary mb-2">Sampatti</h1>
+                        <p class="text-lg text-base-content opacity-70">Investment Dashboard</p>
+                    </div>
+                    
+                    <div class="divider">Connect Your Investments</div>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="flex items-center justify-center space-x-4 text-sm">
+                            <div class="badge badge-outline">
+                                <i class="fas fa-building mr-1"></i>Kuvera
+                            </div>
+                            <div class="badge badge-outline">
+                                <i class="fas fa-chart-bar mr-1"></i>Stockal
+                            </div>
+                        </div>
+                        <p class="text-base-content opacity-60 text-sm">
+                            Consolidate your portfolio data from multiple platforms in one secure dashboard
+                        </p>
+                    </div>
+
+                    <a href="/auth/google" class="btn btn-primary btn-wide gap-2">
+                        <i class="fab fa-google"></i>
+                        Sign in with Google
+                    </a>
+
+                    <div class="mt-6 text-xs text-base-content opacity-50 space-y-1">
+                        <p><i class="fas fa-shield-alt mr-1"></i>Your credentials are encrypted and secure</p>
+                        <p><i class="fas fa-clock mr-1"></i>Data fetched every 24 hours</p>
+                        <p><i class="fas fa-users mr-1"></i>Invite-only access for family plans</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
