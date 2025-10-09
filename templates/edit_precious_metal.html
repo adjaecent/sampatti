@@ -1,0 +1,117 @@
+{{define "title"}}Edit Precious Metal - Sampatti{{end}}
+
+{{define "content"}}
+<div class="max-w-2xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-primary mb-2">
+      <i data-lucide="edit" class="w-5 h-5 mr-2"></i>Edit {{.MetalType | title}} Holding
+    </h1>
+    <p class="text-base-content opacity-70">
+      Update your precious metal investment details
+    </p>
+  </div>
+
+  <!-- Edit Holding Form -->
+  <div class="card bg-base-100 shadow-lg">
+    <div class="card-body">
+      <form method="POST" class="space-y-6">
+        <!-- Metal Type Display -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i data-lucide="coins" class="w-4 h-4 mr-2"></i>Metal Type
+            </span>
+          </label>
+          <div class="flex items-center space-x-3 p-4 bg-base-200 rounded-lg">
+            {{if eq .MetalType "gold"}}
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <i data-lucide="coins" class="w-5 h-5 text-yellow-600"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg">Gold</h3>
+              <p class="text-sm text-base-content opacity-60">
+                Gold investment
+              </p>
+            </div>
+            {{else}}
+            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i data-lucide="coins" class="w-5 h-5 text-gray-600"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg">Silver</h3>
+              <p class="text-sm text-base-content opacity-60">
+                Silver investment
+              </p>
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i data-lucide="scale" class="w-4 h-4 mr-2"></i>Quantity (grams)
+            </span>
+          </label>
+          <input
+            type="number"
+            name="quantity"
+            step="0.01"
+            min="0.01"
+            value="{{.Quantity}}"
+            placeholder="Enter quantity in grams"
+            class="input input-bordered w-full"
+            required
+          />
+          <label class="label">
+            <span class="label-text-alt text-base-content opacity-60">
+              Enter the weight of your precious metal holding
+            </span>
+          </label>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i data-lucide="sticky-note" class="w-4 h-4 mr-2"></i>Notes (Optional)
+            </span>
+          </label>
+          <textarea
+            name="notes"
+            placeholder="Add any notes about this holding"
+            class="textarea textarea-bordered w-full"
+            rows="3"
+          >{{.Notes}}</textarea>
+        </div>
+
+        <!-- Added Date Display -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">
+              <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>Originally Added
+            </span>
+          </label>
+          <div class="p-3 bg-base-200 rounded">
+            {{.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-control mt-8">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
+            <a href="/dashboard" class="btn btn-ghost">
+              <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="save" class="w-4 h-4 mr-2"></i>Update Holding
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

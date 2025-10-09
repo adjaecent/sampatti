@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"html/template"
 	"log"
 	"net/http"
 
@@ -15,10 +14,10 @@ type AuthHandler struct {
 	authService  *service.AuthService
 	oauth2Config *oauth2.Config
 	store        *sessions.CookieStore
-	templates    *template.Template
+	templates    TemplateRenderer
 }
 
-func NewAuthHandler(authService *service.AuthService, oauth2Config *oauth2.Config, store *sessions.CookieStore, templates *template.Template) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, oauth2Config *oauth2.Config, store *sessions.CookieStore, templates TemplateRenderer) *AuthHandler {
 	return &AuthHandler{
 		authService:  authService,
 		oauth2Config: oauth2Config,
@@ -37,7 +36,7 @@ func (h *AuthHandler) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.templates.ExecuteTemplate(w, "home.html", nil)
+	h.templates.Render(w, "home.html", nil)
 }
 
 func (h *AuthHandler) GoogleLogin(w http.ResponseWriter, r *http.Request) {

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log"
+	"html/template"
 	"net/http"
 	"strconv"
 
@@ -11,77 +11,50 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-type DashboardHandler struct {
-	dashService           *service.DashboardService
-	fetchService          *service.FetchService
+type PreciousMetalsHandler struct {
 	preciousMetalsService *service.PreciousMetalsService
 	store                 *sessions.CookieStore
-	templates             TemplateRenderer
+	templates             *template.Template
 }
 
-func NewDashboardHandler(dashService *service.DashboardService, fetchService *service.FetchService, preciousMetalsService *service.PreciousMetalsService, store *sessions.CookieStore, templates TemplateRenderer) *DashboardHandler {
-	return &DashboardHandler{
-		dashService:           dashService,
-		fetchService:          fetchService,
+func NewPreciousMetalsHandler(preciousMetalsService *service.PreciousMetalsService, store *sessions.CookieStore, templates *template.Template) *PreciousMetalsHandler {
+	return &PreciousMetalsHandler{
 		preciousMetalsService: preciousMetalsService,
 		store:                 store,
 		templates:             templates,
 	}
 }
 
-func (h *DashboardHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
-	planID := middleware.GetPlanID(r)
-	userID := middleware.GetUserID(r)
-	log.Printf("Dashboard request - planID: %d, userID: %d", planID, userID)
-	
-	if planID == 0 || userID == 0 {
-		log.Printf("Invalid planID or userID, clearing session")
-		// Clear the session and redirect to home
-		session, _ := h.store.Get(r, "session")
-		session.Values["user_email"] = ""
-		session.Values["user_id"] = 0
-		session.Values["plan_id"] = 0
-		session.Save(r, w)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	data, err := h.dashService.GetDashboardData(planID, userID)
-	if err != nil {
-		log.Printf("Failed to load dashboard data: %v", err)
-		// If the plan/user doesn't exist in DB, clear session and redirect
-		log.Printf("Clearing stale session and redirecting to home")
-		session, _ := h.store.Get(r, "session")
-		session.Values["user_email"] = ""
-		session.Values["user_id"] = 0
-		session.Values["plan_id"] = 0
-		session.Save(r, w)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	h.templates.Render(w, "dashboard.html", data)
-}
-
-func (h *DashboardHandler) FetchData(w http.ResponseWriter, r *http.Request) {
+func (h *PreciousMetalsHandler) Holdings(w http.ResponseWriter, r *http.Request) {
 	planID := middleware.GetPlanID(r)
 	if planID == 0 {
 		http.Error(w, "Plan not found", http.StatusBadRequest)
 		return
 	}
 
-	err := h.fetchService.FetchAllData(planID)
+	holdings, err := h.preciousMetalsService.GetHoldingsByPlan(planID)
 	if err != nil {
-		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
+		http.Error(w, "Failed to load holdings", http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	summary, err := h.preciousMetalsService.GetSummaryByPlan(planID)
+	if err != nil {
+		http.Error(w, "Failed to load summary", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Holdings": holdings,
+		"Summary":  summary,
+	}
+
+	h.templates.ExecuteTemplate(w, "precious_metals.html", data)
 }
 
-func (h *DashboardHandler) AddPreciousMetal(w http.ResponseWriter, r *http.Request) {
+func (h *PreciousMetalsHandler) AddHolding(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		h.templates.Render(w, "add_precious_metal.html", nil)
+		h.templates.ExecuteTemplate(w, "add_precious_metal.html", nil)
 		return
 	}
 
@@ -113,10 +86,10 @@ func (h *DashboardHandler) AddPreciousMetal(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "/precious-metals", http.StatusSeeOther)
 }
 
-func (h *DashboardHandler) EditPreciousMetal(w http.ResponseWriter, r *http.Request) {
+func (h *PreciousMetalsHandler) EditHolding(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	holdingID, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -137,7 +110,7 @@ func (h *DashboardHandler) EditPreciousMetal(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		h.templates.Render(w, "edit_precious_metal.html", holding)
+		h.templates.ExecuteTemplate(w, "edit_precious_metal.html", holding)
 		return
 	}
 
@@ -162,10 +135,10 @@ func (h *DashboardHandler) EditPreciousMetal(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "/precious-metals", http.StatusSeeOther)
 }
 
-func (h *DashboardHandler) DeletePreciousMetal(w http.ResponseWriter, r *http.Request) {
+func (h *PreciousMetalsHandler) DeleteHolding(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	holdingID, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -185,5 +158,5 @@ func (h *DashboardHandler) DeletePreciousMetal(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "/precious-metals", http.StatusSeeOther)
 }

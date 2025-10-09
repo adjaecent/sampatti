@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 	"strconv"
 	"log"
@@ -15,10 +14,10 @@ import (
 type AccountHandler struct {
 	investmentAccountService *service.InvestmentAccountService
 	store                    *sessions.CookieStore
-	templates                *template.Template
+	templates                TemplateRenderer
 }
 
-func NewAccountHandler(investmentAccountService *service.InvestmentAccountService, store *sessions.CookieStore, templates *template.Template) *AccountHandler {
+func NewAccountHandler(investmentAccountService *service.InvestmentAccountService, store *sessions.CookieStore, templates TemplateRenderer) *AccountHandler {
 	return &AccountHandler{
 		investmentAccountService: investmentAccountService,
 		store:                    store,
@@ -39,14 +38,14 @@ func (h *AccountHandler) Accounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.templates.ExecuteTemplate(w, "accounts.html", map[string]interface{}{
-		"Accounts": accounts,
+	h.templates.Render(w, "accounts.html", map[string]interface{}{
+		"InvestmentAccounts": accounts,
 	})
 }
 
 func (h *AccountHandler) AddAccount(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		h.templates.ExecuteTemplate(w, "add_account.html", nil)
+		h.templates.Render(w, "add_account.html", nil)
 		return
 	}
 

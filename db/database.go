@@ -82,6 +82,16 @@ func Migrate(db *sql.DB) error {
 			error_message TEXT,
 			FOREIGN KEY (investment_account_id) REFERENCES investment_accounts (id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS precious_metal_holdings (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			plan_id INTEGER NOT NULL,
+			metal_type TEXT NOT NULL CHECK (metal_type IN ('gold', 'silver')),
+			quantity REAL NOT NULL DEFAULT 0,
+			notes TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (plan_id) REFERENCES plans (id)
+		)`,
 	}
 
 	for _, query := range queries {

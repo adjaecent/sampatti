@@ -1,72 +1,6 @@
-{{define "accounts.html"}}
-<!doctype html>
-<html lang="en" data-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Accounts - Sampatti</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/daisyui@4.4.2/dist/full.min.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="min-h-screen bg-base-100">
-    <div class="navbar bg-primary text-primary-content shadow-lg">
-      <div class="navbar-start">
-        <a href="/dashboard" class="btn btn-ghost text-xl font-bold">
-          <i class="fas fa-chart-line mr-2"></i>
-          Sampatti
-        </a>
-      </div>
-      <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1">
-          <li>
-            <a href="/dashboard" class="hover:bg-primary-focus">
-              <i class="fas fa-tachometer-alt mr-2"></i>
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <a href="/accounts" class="hover:bg-primary-focus">
-              <i class="fas fa-user-cog mr-2"></i>
-              Accounts
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div class="navbar-end">
-        <form method="POST" action="/logout" class="inline">
-          <button type="submit" class="btn btn-ghost hover:bg-primary-focus">
-            <i class="fas fa-sign-out-alt mr-2"></i>
-            Logout
-          </button>
-        </form>
-      </div>
-    </div>
+{{define "title"}}Accounts - Sampatti{{end}}
 
-    <main class="container mx-auto px-4 py-8">
-      {{template "accounts_content" .}}
-    </main>
-
-    <footer class="footer footer-center p-4 bg-base-300 text-base-content mt-auto">
-      <div>
-        <p class="font-semibold">Sampatti Investment Dashboard</p>
-        <p class="text-sm opacity-70">
-          Consolidate your Kuvera and Stockal investments
-        </p>
-      </div>
-    </footer>
-  </body>
-</html>
-{{end}}
-
-{{define "accounts_content"}}
+{{define "content"}}
 <div class="space-y-6">
   <!-- Header -->
   <div
@@ -74,22 +8,24 @@
   >
     <div>
       <h1 class="text-3xl font-bold text-primary">
-        <i class="fas fa-user-cog mr-2"></i>Connected Accounts
+        <i data-lucide="settings" class="w-5 h-5 mr-2"></i>Connected Accounts
       </h1>
       <p class="text-base-content opacity-70">
-        Manage your Kuvera and Stockal account connections
+        Manage your investment platform connections
       </p>
     </div>
-    <a href="/accounts/add" class="btn btn-primary">
-      <i class="fas fa-plus mr-2"></i>Add Account
-    </a>
+    <div class="flex gap-2">
+      <a href="/accounts/add" class="btn btn-primary">
+        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>Add Account
+      </a>
+    </div>
   </div>
 
-  <!-- Accounts List -->
-  {{if .Accounts}}
+  <!-- Accounts Grid -->
+  {{if .InvestmentAccounts}}
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {{range .Accounts}}
-    <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+    {{range .InvestmentAccounts}}
+    <div class="card bg-base-100 shadow-lg">
       <div class="card-body">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-3">
@@ -97,32 +33,31 @@
             <div
               class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center"
             >
-              <i class="fas fa-building text-primary text-xl"></i>
+              <i data-lucide="building" class="w-5 h-5 text-primary"></i>
             </div>
             <div>
               <h3 class="font-bold text-lg">Kuvera</h3>
               <p class="text-sm text-base-content opacity-60">
-                Mutual Funds & Gold
+                Mutual Fund Platform
               </p>
             </div>
             {{else}}
             <div
               class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center"
             >
-              <i class="fas fa-chart-bar text-secondary text-xl"></i>
+              <i data-lucide="bar-chart" class="w-5 h-5 text-secondary"></i>
             </div>
             <div>
               <h3 class="font-bold text-lg">Stockal</h3>
               <p class="text-sm text-base-content opacity-60">
-                US Stocks & ETFs
+                Stock Trading Platform
               </p>
             </div>
             {{end}}
           </div>
-
           <div class="dropdown dropdown-end">
-            <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
-              <i class="fas fa-ellipsis-v"></i>
+            <label tabindex="0" class="btn btn-ghost btn-sm">
+              <i data-lucide="more-vertical" class="w-4 h-4"></i>
             </label>
             <ul
               tabindex="0"
@@ -134,11 +69,9 @@
                   action="/accounts/{{.ID}}/delete"
                   onsubmit="return confirm('Are you sure you want to delete this account?')"
                 >
-                  <button
-                    type="submit"
-                    class="text-error hover:bg-error hover:text-error-content w-full text-left"
-                  >
-                    <i class="fas fa-trash mr-2"></i>Delete Account
+                  <button type="submit" class="flex items-center text-error">
+                    <i data-lucide="trash" class="w-4 h-4 mr-2"></i>Delete
+                    Account
                   </button>
                 </form>
               </li>
@@ -148,31 +81,25 @@
 
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-medium">Username:</span>
-            <code class="text-sm bg-base-200 px-2 py-1 rounded"
-              >{{.Username}}</code
-            >
+            <span class="text-sm text-base-content opacity-70">Username</span>
+            <span class="font-mono text-sm">{{.Username}}</span>
           </div>
-
           <div class="flex items-center justify-between">
-            <span class="text-sm font-medium">Added:</span>
-            <span class="text-sm text-base-content opacity-60"
-              >{{.CreatedAt.Format "Jan 02, 2006"}}</span
-            >
-          </div>
-
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium">Status:</span>
+            <span class="text-sm text-base-content opacity-70">Status</span>
             <div class="badge badge-success badge-sm">
-              <i class="fas fa-check mr-1"></i>Connected
+              <i data-lucide="check" class="w-4 h-4 mr-1"></i>Connected
             </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-base-content opacity-70">Added</span>
+            <span class="text-sm">{{.CreatedAt.Format "2006-01-02"}}</span>
           </div>
         </div>
 
         <div class="card-actions justify-end mt-4">
-          <form method="POST" action="/fetch" class="inline">
-            <button type="submit" class="btn btn-outline btn-sm">
-              <i class="fas fa-sync-alt mr-2"></i>Fetch Data
+          <form method="POST" action="/fetch" class="w-full">
+            <button type="submit" class="btn btn-primary btn-sm w-full">
+              <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>Fetch Data
             </button>
           </form>
         </div>
@@ -187,42 +114,47 @@
       <div
         class="mx-auto w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mb-6"
       >
-        <i class="fas fa-user-plus text-3xl text-base-content opacity-40"></i>
+        <i
+          data-lucide="user-plus"
+          class="w-8 h-8 text-base-content opacity-40"
+        ></i>
       </div>
 
-      <h2 class="text-2xl font-bold mb-2">No Accounts Connected</h2>
+      <h2 class="text-2xl font-bold mb-2">No Connected Accounts</h2>
       <p class="text-base-content opacity-60 mb-6 max-w-md mx-auto">
-        Connect your Kuvera and Stockal accounts to start tracking your
-        investments in one unified dashboard.
+        Connect your investment accounts to start tracking your portfolio across
+        multiple platforms.
       </p>
 
-      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <a href="/accounts/add" class="btn btn-primary">
-          <i class="fas fa-plus mr-2"></i>Add Your First Account
-        </a>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+        <div class="flex items-center space-x-3 p-4 bg-base-200 rounded-lg">
+          <i data-lucide="building" class="w-6 h-6 text-primary mb-2"></i>
+          <div class="text-left">
+            <h3 class="font-bold">Kuvera</h3>
+            <p class="text-xs text-base-content opacity-60">
+              Mutual funds & investments
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3 p-4 bg-base-200 rounded-lg">
+          <i data-lucide="bar-chart" class="w-6 h-6 text-secondary mb-2"></i>
+          <div class="text-left">
+            <h3 class="font-bold">Stockal</h3>
+            <p class="text-xs text-base-content opacity-60">US stocks & ETFs</p>
+          </div>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 max-w-md mx-auto">
-        <div class="text-center p-4 bg-base-200 rounded-lg">
-          <i class="fas fa-building text-primary text-2xl mb-2"></i>
-          <h4 class="font-semibold">Kuvera</h4>
-          <p class="text-xs text-base-content opacity-60">
-            Mutual funds, gold, and more
-          </p>
-        </div>
-        <div class="text-center p-4 bg-base-200 rounded-lg">
-          <i class="fas fa-chart-bar text-secondary text-2xl mb-2"></i>
-          <h4 class="font-semibold">Stockal</h4>
-          <p class="text-xs text-base-content opacity-60">US stocks and ETFs</p>
-        </div>
-      </div>
+      <a href="/accounts/add" class="btn btn-primary">
+        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>Add Your First Account
+      </a>
     </div>
   </div>
   {{end}}
 
   <!-- Security Notice -->
   <div class="alert alert-info">
-    <i class="fas fa-shield-alt"></i>
+    <i data-lucide="shield" class="w-4 h-4"></i>
     <div>
       <h3 class="font-bold">Security Notice</h3>
       <div class="text-sm">

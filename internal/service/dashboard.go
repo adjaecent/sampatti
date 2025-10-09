@@ -12,14 +12,16 @@ type DashboardService struct {
 	userRepo              *repository.UserRepository
 	investmentAccountRepo *repository.InvestmentAccountRepository
 	fetchRepo             *repository.FetchRepository
+	preciousMetalsRepo    *repository.PreciousMetalsRepository
 }
 
-func NewDashboardService(planRepo *repository.PlanRepository, userRepo *repository.UserRepository, investmentAccountRepo *repository.InvestmentAccountRepository, fetchRepo *repository.FetchRepository) *DashboardService {
+func NewDashboardService(planRepo *repository.PlanRepository, userRepo *repository.UserRepository, investmentAccountRepo *repository.InvestmentAccountRepository, fetchRepo *repository.FetchRepository, preciousMetalsRepo *repository.PreciousMetalsRepository) *DashboardService {
 	return &DashboardService{
 		planRepo:              planRepo,
 		userRepo:              userRepo,
 		investmentAccountRepo: investmentAccountRepo,
 		fetchRepo:             fetchRepo,
+		preciousMetalsRepo:    preciousMetalsRepo,
 	}
 }
 
@@ -57,6 +59,10 @@ func (s *DashboardService) GetDashboardData(planID int, userID int) (*models.Das
 
 	// Calculate total value using only latest fetch per account
 	data.TotalValue = s.calculateTotalValue(latestKuveraPerAccount, latestStockalPerAccount)
+
+	// Get precious metals data
+	data.PreciousMetalsHoldings, _ = s.preciousMetalsRepo.GetByPlanID(planID)
+	data.PreciousMetalsSummary, _ = s.preciousMetalsRepo.GetSummaryByPlanID(planID)
 
 	return data, nil
 }

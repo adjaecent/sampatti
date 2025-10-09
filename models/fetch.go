@@ -33,4 +33,6 @@ type DashboardData struct {
 	LatestStockal         []StockalFetch        `json:"latest_stockal"`
 	TotalValue            float64               `json:"total_value"`
 	LastFetchTime         *time.Time            `json:"last_fetch_time"`
+	PreciousMetalsHoldings []PreciousMetalHolding `json:"precious_metals_holdings"`
+	PreciousMetalsSummary  []PreciousMetalSummary `json:"precious_metals_summary"`
 }
