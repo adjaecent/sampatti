@@ -1,5 +1,6 @@
 *.db
 .env
 certs/
+.idea/
 sampatti
 sampatti-minimal
