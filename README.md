@@ -1,199 +1,130 @@
-# Sampatti - Investment Portfolio Dashboard
+# Sampatti MCP Server
 
-A unified dashboard for tracking your investments across multiple platforms including Kuvera and Stockal. Sampatti securely connects to your investment accounts and provides a consolidated view of your portfolio performance.
+A Model Context Protocol (MCP) server for accessing investment data from Kuvera and Stockal platforms. Built using the [mcp-go](https://github.com/mark3labs/mcp-go) library and inspired by the [Kite MCP server](https://github.com/zerodha/kite-mcp-server) architecture.
+
+> **Note**: This repository has been refactored from a dashboard application to an MCP server for better integration with AI assistants.
 
 ## 🌟 Features
 
-- **Multi-Platform Support**: Connect Kuvera and Stockal accounts
-- **Secure Authentication**: Google OAuth login with invite-only access
-- **Automated Data Fetching**: Scheduled updates every 24 hours
-- **Consolidated Dashboard**: Unified view of all your investments
-- **Privacy-First**: Encrypted credential storage with bcrypt
-- **Real-time Portfolio Tracking**: Current values, gains/losses, and performance metrics
-- **Clean UI**: Simple, responsive interface using DaisyUI
+- **Multi-platform support**: Access both Kuvera (mutual funds) and Stockal (US stocks) data
+- **Streaming HTTP endpoints**: Separate streaming endpoints for each platform
+- **Secure authentication**: Web-based credential input with short-lived tokens
+- **Modular architecture**: Separate tools for different platforms
+- **MCP Protocol**: Native support for Model Context Protocol
 
-## 🛡️ Security & Privacy
+## Architecture
 
-- **Encrypted Storage**: All passwords are hashed using bcrypt before storage
-- **Read-Only Access**: Only fetches data, never modifies or trades
-- **Google OAuth**: Secure authentication without storing additional passwords
-- **Invite-Only**: Access control for family/group plans
-- **Local Database**: SQLite database stored on your server
+The server runs as a streaming HTTP server with separate MCP endpoints:
 
-## 🚀 Quick Start
+- **Kuvera endpoint**: `http://localhost:8081/mcp-kuvera`
+- **Stockal endpoint**: `http://localhost:8081/mcp-stockal`
+- **Auth UI**: `http://localhost:8080`
 
-### Prerequisites
+Simply start the server and connect your MCP clients to the appropriate endpoints.
 
-- Go 1.25.0+
-- Google OAuth2 credentials
-- Valid Kuvera and/or Stockal accounts
+## Configuration
 
-### Installation
+Copy `.env.example` to `.env` and configure as needed:
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/adjaecent/sampatti.git
-   cd sampatti
-   ```
-
-2. **Set up environment variables**
-   ```bash
-   export GOOGLE_CLIENT_ID="your-google-client-id"
-   export GOOGLE_CLIENT_SECRET="your-google-client-secret"
-   export SESSION_SECRET="your-secure-session-secret"
-   export BASE_URL="http://localhost:8080"  # or your domain
-   export DATABASE_PATH="./sampatti.db"
-   ```
-
-3. **Install dependencies**
-   ```bash
-   go mod tidy
-   ```
-
-4. **Run the application**
-   ```bash
-   go run main.go
-   ```
-
-5. **Access the dashboard**
-   Open http://localhost:8080 in your browser
-
-## 🏗️ Architecture
-
-### Database Schema
-
-- **plans**: User plans and ownership
-- **accounts**: Connected investment platform accounts (encrypted)
-- **plan_members**: Invite-only access control
-- **kuvera_fetches**: Historical Kuvera data (append-only)
-- **stockal_fetches**: Historical Stockal data (append-only)
-
-### Core Components
-
-- **Authentication**: Google OAuth2 with session management
-- **Data Fetching**: Automated background jobs using the unofficial APIs
-- **Dashboard**: Server-rendered HTML with DaisyUI styling
-- **Scheduler**: 24-hour intervals for data synchronization
-
-## 📊 Supported Platforms
-
-### Kuvera
-- Portfolio summary and performance
-- Detailed fund holdings
-- Transaction history and SIP details
-- Current gold prices
-
-### Stockal
-- Account summary and cash balances
-- Portfolio details and holdings
-- US stock and ETF positions
-
-## 🔧 Configuration
+```bash
+cp .env.example .env
+```
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GOOGLE_CLIENT_ID` | Google OAuth2 client ID | Required |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth2 client secret | Required |
-| `SESSION_SECRET` | Session encryption key | `your-session-secret-change-me` |
-| `BASE_URL` | Application base URL | `http://localhost:8080` |
-| `DATABASE_PATH` | SQLite database file path | `./sampatti.db` |
-| `PORT` | Server port | `8080` |
+- `AUTH_PORT`: Port for authentication web UI (default: 8080)
+- `MCP_PORT`: Port for streaming HTTP MCP server (default: 8081)
 
-### Google OAuth Setup
+## Quick Start
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth2 credentials
-5. Add your domain to authorized redirect URIs: `{BASE_URL}/auth/google/callback`
+1. **Build the server:**
+   ```bash
+   go build -o sampatti ./cmd/sampatti
+   ```
 
-## 🚦 Usage
+2. **Start the server:**
+   ```bash
+   ./sampatti
+   ```
 
-### Adding Accounts
+3. **Generate auth token:**
+   - Call `auth_request()` tool to get authentication URL
+   - Visit the URL and enter your Kuvera/Stockal credentials
+   - Call `get_auth_token()` with the request ID to get your token
 
-1. Sign in with Google OAuth
-2. Navigate to "Accounts" section
-3. Click "Add Account"
-4. Select platform (Kuvera or Stockal)
-5. Enter your platform credentials
-6. Credentials are encrypted and stored securely
+4. **Connect MCP clients:**
+   - Connect to `http://localhost:8081/mcp-kuvera` for Kuvera tools
+   - Connect to `http://localhost:8081/mcp-stockal` for Stockal tools
+   - Use the authentication token with the data tools
 
-### Dashboard Overview
-
-- **Total Portfolio Value**: Combined value across all platforms
-- **Connected Accounts**: Number and types of linked accounts
-- **Recent Activity**: Latest data fetches and updates
-- **Platform Breakdown**: Separate views for Kuvera and Stockal data
-
-### Data Fetching
-
-- **Automatic**: Every 24 hours via background scheduler
-- **Manual**: Click "Fetch Data" button for immediate update
-- **Historical**: All fetches are stored for trend analysis
-
-## 🛠️ Development
-
-### Project Structure
+## Architecture
 
 ```
 sampatti/
-├── main.go                 # Application entry point
+├── cmd/sampatti/           # Main entry point
 ├── internal/
-│   ├── config/            # Configuration management
-│   ├── database/          # Database setup and migrations
-│   ├── handlers/          # HTTP request handlers
-│   ├── middleware/        # Authentication middleware
-│   ├── models/           # Data models
-│   ├── scheduler/        # Background job scheduler
-│   └── services/         # Business logic services
-├── templates/            # HTML templates
-└── static/              # Static assets
+│   ├── auth/              # Authentication management
+│   ├── mcp/               # MCP server implementations
+│   │   ├── shared/        # Shared authentication tools
+│   │   ├── kuvera/        # Kuvera-specific MCP server
+│   │   ├── stockal/       # Stockal-specific MCP server
+│   │   └── server.go      # Server manager and routing
+│   ├── service/           # Business logic
+│   └── web/              # Web authentication UI
+└── server/               # Legacy server (deprecated)
 ```
 
-### Running in Development
+## Tools Available
 
+### Authentication Tools (Available on both endpoints)
+- `auth_request`: Create authentication request and get auth URL
+- `get_auth_token`: Retrieve token after user authorization
+
+### Kuvera Tools (Available at `/mcp-kuvera` endpoint)
+- `get_kuvera_data`: Fetch portfolio and mutual fund holdings
+- `get_gold_silver_rates`: Get gold and silver prices from Kuvera
+
+### Stockal Tools (Available at `/mcp-stockal` endpoint)
+- `get_stockal_data`: Fetch US stock portfolio and positions
+
+## Security
+
+- Credentials are entered through a secure web interface
+- Short-lived authentication tokens (1 month expiry)
+- No credentials stored in environment variables
+- HTTP-only for simplicity
+
+## Development
+
+### Prerequisites
+- Go 1.25+
+- Access to Kuvera and/or Stockal accounts
+
+### Building
 ```bash
-# Install dependencies
-go mod tidy
-
-# Run with live reload (if you have air installed)
-air
-
-# Or run directly
-go run main.go
+go mod download
+go build -o sampatti ./cmd/sampatti
 ```
 
-### Building for Production
-
+### Testing the Server
 ```bash
-# Build binary
-go build -o sampatti
-
-# Run binary
+# Start the server
 ./sampatti
+
+# Test endpoints are available at:
+# - http://localhost:8081/mcp-kuvera (Kuvera tools)
+# - http://localhost:8081/mcp-stockal (Stockal tools)
+# - http://localhost:8080 (Auth UI)
 ```
 
-## 📝 API Integration
+## Deployment
 
-This application integrates with:
+The server runs as a single streaming HTTP service with separate MCP endpoints:
 
-- [Unofficial Kuvera API](https://github.com/adjaecent/unofficial-kuvera-api)
-- [Unofficial Stockal API](https://github.com/adjaecent/unofficial-stockal-api)
+1. **Single deployment**: One server instance serves both platforms
+2. **Separate endpoints**: Connect different clients to different endpoints as needed
+3. **Streaming protocol**: Uses HTTP streaming for real-time MCP communication
 
-## ⚠️ Disclaimer
+## License
 
-This is an unofficial application not affiliated with Kuvera or Stockal. Use at your own risk. Always verify data accuracy before making investment decisions.
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
-
-Contributions welcome! Please read the contributing guidelines and submit pull requests.
-
-## 🐛 Issues
-
-Report issues on the [GitHub Issues](https://github.com/adjaecent/sampatti/issues) page.
+This project is licensed under the MIT License.

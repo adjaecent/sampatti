@@ -1,66 +1,48 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"github.com/adjaecent/sampatti/config"
+	"github.com/adjaecent/sampatti/internal/auth"
+	"github.com/adjaecent/sampatti/internal/mcp"
+	"github.com/adjaecent/sampatti/internal/web"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/adjaecent/sampatti/config"
-	"github.com/adjaecent/sampatti/db"
-	"github.com/adjaecent/sampatti/internal/scheduler"
-	"github.com/adjaecent/sampatti/web"
-	"github.com/gorilla/mux"
 )
 
 func main() {
-	cfg := config.Load()
+	fmt.Fprintf(os.Stderr, "Sampatti starting...\n")
+	config.Load()
 
-	database, err := db.Connect(cfg.DatabasePath)
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
-	}
-	defer database.Close()
+	authRequestMgr := auth.NewAuthRequestManager()
+	mcpServer := mcp.NewMCPServer(authRequestMgr, config.C.MCPPort)
+	authHTTPServer := web.NewAuthServer(authRequestMgr, config.C.AuthHTTPPort)
 
-	if err := db.Migrate(database); err != nil {
-		log.Fatal("Failed to migrate database:", err)
-	}
-
-	// Start scheduler
-	sched := scheduler.New(database)
-	go sched.Start()
-
-	// Setup web server
-	r := mux.NewRouter()
-	webHandler := web.New(database, cfg)
-	webHandler.SetupRoutes(r)
-
-	// Static files
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	// Graceful shutdown
+	// Set up signal handling for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
-	}
-
 	go func() {
-		log.Printf("Server starting on port %s", port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("Server failed to start:", err)
-		}
+		<-stop
+		log.Println("Shutting down servers...")
+		cancel()
 	}()
 
-	<-stop
-	log.Println("Shutting down server...")
-	sched.Stop()
+	// Start auth server in background
+	go func() {
+		authHTTPServer.Start()
+	}()
+
+	if err := mcpServer.Run(ctx, config.C.MCPPort); err != nil {
+		fmt.Fprintf(os.Stderr, "MCP server failed: %v\n", err)
+		log.Printf("MCP server failed: %v", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "MCP server stopped\n")
+	log.Println("MCP server stopped")
 }
