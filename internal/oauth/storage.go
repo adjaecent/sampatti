@@ -27,8 +27,9 @@ type MemoryStore struct {
 	// User credentials keyed by subject ID
 	credentials map[string]*Credentials
 
-	// Encrypted tmpfs cache for credentials
-	credCache *CredCache
+	// Encrypted tmpfs caches
+	credCache    *CredCache
+	sessionCache *SessionCache
 }
 
 // StoreData wraps a fosite.Requester with a creation timestamp for expiry tracking.
@@ -41,21 +42,33 @@ type StoreData struct {
 // If secret is provided, credentials are cached encrypted on /dev/shm
 // and restored on startup.
 func NewMemoryStore(secret []byte) *MemoryStore {
-	cache := NewCredCache(secret)
+	credCache := NewCredCache(secret)
+	sessionCache := NewSessionCache(secret)
 
 	creds := make(map[string]*Credentials)
-	if restored := cache.Load(); restored != nil {
+	if restored := credCache.Load(); restored != nil {
 		creds = restored
 	}
 
+	clients := make(map[string]*fosite.DefaultClient)
+	accessTokens := make(map[string]StoreData)
+	refreshTokens := make(map[string]StoreData)
+
+	if rc, rat, rrt := sessionCache.Load(); rc != nil {
+		clients = rc
+		accessTokens = rat
+		refreshTokens = rrt
+	}
+
 	return &MemoryStore{
-		clients:       make(map[string]*fosite.DefaultClient),
+		clients:       clients,
 		authCodes:     make(map[string]StoreData),
-		accessTokens:  make(map[string]StoreData),
-		refreshTokens: make(map[string]StoreData),
+		accessTokens:  accessTokens,
+		refreshTokens: refreshTokens,
 		pkceRequests:  make(map[string]fosite.Requester),
 		credentials:   creds,
-		credCache:     cache,
+		credCache:     credCache,
+		sessionCache:  sessionCache,
 	}
 }
 
@@ -80,6 +93,27 @@ func (s *MemoryStore) GetCredentials(subject string) *Credentials {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.credentials[subject]
+}
+
+// saveSessionState snapshots and persists OAuth state to /dev/shm.
+// Must be called WITHOUT the lock held (it acquires a read lock).
+func (s *MemoryStore) saveSessionState() {
+	s.mu.RLock()
+	clients := make(map[string]*fosite.DefaultClient, len(s.clients))
+	for k, v := range s.clients {
+		clients[k] = v
+	}
+	accessTokens := make(map[string]StoreData, len(s.accessTokens))
+	for k, v := range s.accessTokens {
+		accessTokens[k] = v
+	}
+	refreshTokens := make(map[string]StoreData, len(s.refreshTokens))
+	for k, v := range s.refreshTokens {
+		refreshTokens[k] = v
+	}
+	s.mu.RUnlock()
+
+	s.sessionCache.Save(clients, accessTokens, refreshTokens)
 }
 
 // --- Client management (fosite.ClientManager) ---
@@ -124,6 +158,7 @@ func (s *MemoryStore) RegisterClient(redirectURIs []string) (*fosite.DefaultClie
 	s.clients[clientID] = client
 	s.mu.Unlock()
 
+	s.saveSessionState()
 	return client, nil
 }
 
@@ -158,8 +193,10 @@ func (s *MemoryStore) InvalidateAuthorizeCodeSession(_ context.Context, code str
 
 func (s *MemoryStore) CreateAccessTokenSession(_ context.Context, signature string, req fosite.Requester) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.accessTokens[signature] = StoreData{Requester: req, CreatedAt: time.Now()}
+	s.mu.Unlock()
+
+	s.saveSessionState()
 	return nil
 }
 
@@ -185,8 +222,10 @@ func (s *MemoryStore) DeleteAccessTokenSession(_ context.Context, signature stri
 
 func (s *MemoryStore) CreateRefreshTokenSession(_ context.Context, signature string, accessSignature string, req fosite.Requester) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.refreshTokens[signature] = StoreData{Requester: req, CreatedAt: time.Now()}
+	s.mu.Unlock()
+
+	s.saveSessionState()
 	return nil
 }
 
