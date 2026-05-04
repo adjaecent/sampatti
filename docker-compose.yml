@@ -9,6 +9,8 @@ services:
       - PORT=8081
       - BASE_URL=${BASE_URL:-https://sampatti.example.com}
       - OAUTH_SECRET=${OAUTH_SECRET:-}
+    volumes:
+      - shm:/dev/shm
     networks:
       - shared
     healthcheck:
@@ -16,6 +18,14 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+volumes:
+  shm:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1m
 
 networks:
   shared:
