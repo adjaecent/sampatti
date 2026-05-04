@@ -1,48 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sampatti - Authorize</title>
-</head>
-<body>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 480px; margin: 2rem auto; padding: 0 1rem; }
+      fieldset { margin-bottom: 1.5rem; padding: 1rem; }
+      label { display: block; margin-top: 0.75rem; margin-bottom: 0.25rem; }
+      input[type="text"], input[type="password"] { display: block; width: 100%; padding: 0.4rem; box-sizing: border-box; }
+      button { margin-top: 1rem; padding: 0.5rem 1.5rem; }
+    </style>
+  </head>
+  <body>
     <h1>Sampatti</h1>
-    <p>Enter your investment platform credentials to authorize access.</p>
+    <p>
+      Enter your investment platform credentials to authorize access. Configure
+      one or both platforms.
+    </p>
 
     {{if .Error}}
     <p><strong>Error:</strong> {{.Error}}</p>
     {{end}}
 
     <form method="post" action="/authorize">
-        <input type="hidden" name="client_id" value="{{.ClientID}}">
-        <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
-        <input type="hidden" name="state" value="{{.State}}">
-        <input type="hidden" name="scope" value="{{.Scope}}">
-        <input type="hidden" name="response_type" value="{{.ResponseType}}">
-        <input type="hidden" name="code_challenge" value="{{.CodeChallenge}}">
-        <input type="hidden" name="code_challenge_method" value="{{.CodeChallengeMethod}}">
+      <input type="hidden" name="client_id" value="{{.ClientID}}" />
+      <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}" />
+      <input type="hidden" name="state" value="{{.State}}" />
+      <input type="hidden" name="scope" value="{{.Scope}}" />
+      <input type="hidden" name="response_type" value="{{.ResponseType}}" />
+      <input type="hidden" name="code_challenge" value="{{.CodeChallenge}}" />
+      <input type="hidden" name="code_challenge_method" value="{{.CodeChallengeMethod}}" />
 
-        <fieldset>
-            <legend>Kuvera (Indian Mutual Funds)</legend>
-            <label for="kuvera_username">Email</label>
-            <input type="text" id="kuvera_username" name="kuvera_username" placeholder="your-email@example.com">
-            <label for="kuvera_password">Password</label>
-            <input type="password" id="kuvera_password" name="kuvera_password">
-        </fieldset>
+      <fieldset>
+        <legend>Kuvera (Indian Mutual Funds)</legend>
+        <label for="kuvera_username">Email</label>
+        <input type="text" id="kuvera_username" name="kuvera_username" placeholder="your-email@example.com" />
+        <label for="kuvera_password">Password</label>
+        <input type="password" id="kuvera_password" name="kuvera_password" />
+      </fieldset>
 
-        <fieldset>
-            <legend>Stockal (US Stocks)</legend>
-            <label for="stockal_username">Username</label>
-            <input type="text" id="stockal_username" name="stockal_username" placeholder="your-username">
-            <label for="stockal_password">Password</label>
-            <input type="password" id="stockal_password" name="stockal_password">
-        </fieldset>
+      <fieldset>
+        <legend>Stockal (US Stocks)</legend>
+        <label for="stockal_username">Username</label>
+        <input type="text" id="stockal_username" name="stockal_username" placeholder="your-username" />
+        <label for="stockal_password">Password</label>
+        <input type="password" id="stockal_password" name="stockal_password" />
+      </fieldset>
 
-        <p><small>Configure one or both platforms. Credentials are stored in memory only.</small></p>
-
-        <button type="submit">Authorize</button>
+      <button type="submit">Authorize</button>
     </form>
 
-    <p><small>Credentials are never persisted to disk. Server restart clears all data.</small></p>
-</body>
+    <p>
+      <small>Credentials are never persisted to disk. Server restart clears all data.</small>
+    </p>
+  </body>
 </html>
