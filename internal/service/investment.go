@@ -2,121 +2,137 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
-	"github.com/adjaecent/sampatti/internal/auth"
 	kuveraAPI "github.com/adjaecent/unofficial-kuvera-api"
 	stockalAPI "github.com/adjaecent/unofficial-stockal-api"
 )
 
-type InvestmentService struct {
-}
+// InvestmentService handles fetching data from investment platforms.
+type InvestmentService struct{}
 
-func NewInvestmentService(authRequestMgr *auth.AuthRequestManager) *InvestmentService {
+// NewInvestmentService creates a new investment service.
+func NewInvestmentService() *InvestmentService {
 	return &InvestmentService{}
 }
 
-func (s *InvestmentService) FetchKuveraData(username, password string) (map[string]interface{}, error) {
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("kuvera credentials not provided")
-	}
-
+// FetchKuveraPortfolio fetches and formats portfolio data from Kuvera.
+func (s *InvestmentService) FetchKuveraPortfolio(username, password string) (string, error) {
 	client := kuveraAPI.NewClient()
 	ctx := context.Background()
 
 	log.Printf("Logging into Kuvera for user: %s", username)
 	_, err := client.Login(ctx, username, password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to login to Kuvera: %w", err)
+		return "", fmt.Errorf("kuvera login failed: %w", err)
 	}
 
-	// Fetch portfolio data
 	portfolio, err := client.GetPortfolio(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Kuvera portfolio: %w", err)
+		return "", fmt.Errorf("failed to get portfolio: %w", err)
 	}
 
-	// Fetch holdings data
-	holdings, err := client.GetHoldings(ctx)
+	data, err := json.MarshalIndent(portfolio, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Kuvera holdings: %w", err)
+		return "", fmt.Errorf("failed to format portfolio: %w", err)
 	}
 
-	// Fetch gold price data (if available)
-	goldPrice, err := client.GetGoldPrice(ctx)
-	if err != nil {
-		log.Printf("Failed to get gold price from Kuvera: %v", err)
-		goldPrice = nil
-	}
-
-	return map[string]interface{}{
-		"username":   username,
-		"portfolio":  portfolio,
-		"holdings":   holdings,
-		"gold_price": goldPrice,
-	}, nil
+	return string(data), nil
 }
 
-func (s *InvestmentService) FetchStockalData(username, password string) (map[string]interface{}, error) {
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("stockal credentials not provided")
+// FetchKuveraHoldings fetches and formats holdings data from Kuvera.
+func (s *InvestmentService) FetchKuveraHoldings(username, password string) (string, error) {
+	client := kuveraAPI.NewClient()
+	ctx := context.Background()
+
+	log.Printf("Logging into Kuvera for user: %s", username)
+	_, err := client.Login(ctx, username, password)
+	if err != nil {
+		return "", fmt.Errorf("kuvera login failed: %w", err)
 	}
 
+	holdings, err := client.GetHoldings(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get holdings: %w", err)
+	}
+
+	data, err := json.MarshalIndent(holdings, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to format holdings: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// FetchGoldPrice fetches current gold prices from Kuvera.
+func (s *InvestmentService) FetchGoldPrice(username, password string) (string, error) {
+	client := kuveraAPI.NewClient()
+	ctx := context.Background()
+
+	_, err := client.Login(ctx, username, password)
+	if err != nil {
+		return "", fmt.Errorf("kuvera login failed: %w", err)
+	}
+
+	goldPrice, err := client.GetGoldPrice(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get gold price: %w", err)
+	}
+
+	data, err := json.MarshalIndent(goldPrice, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to format gold price: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// FetchStockalAccount fetches account summary from Stockal.
+func (s *InvestmentService) FetchStockalAccount(username, password string) (string, error) {
 	client := stockalAPI.NewClient()
 	ctx := context.Background()
 
 	log.Printf("Logging into Stockal for user: %s", username)
 	_, err := client.Login(ctx, username, password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to login to Stockal: %w", err)
+		return "", fmt.Errorf("stockal login failed: %w", err)
 	}
 
-	// Fetch account summary
-	accountSummary, err := client.GetAccountSummary(ctx)
+	summary, err := client.GetAccountSummary(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Stockal account summary: %w", err)
+		return "", fmt.Errorf("failed to get account summary: %w", err)
 	}
 
-	// Fetch portfolio details
-	portfolioDetail, err := client.GetPortfolioDetail(ctx)
+	data, err := json.MarshalIndent(summary, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Stockal portfolio detail: %w", err)
+		return "", fmt.Errorf("failed to format account summary: %w", err)
 	}
 
-	return map[string]interface{}{
-		"username":         username,
-		"account_summary":  accountSummary,
-		"portfolio_detail": portfolioDetail,
-	}, nil
+	return string(data), nil
 }
 
-func (s *InvestmentService) GetGoldSilverRates(kuveraUsername, kuveraPassword string) (map[string]interface{}, error) {
-	// Try to get gold price from Kuvera first if credentials are available
-	if kuveraUsername != "" && kuveraPassword != "" {
-		client := kuveraAPI.NewClient()
-		ctx := context.Background()
+// FetchStockalHoldings fetches portfolio details from Stockal.
+func (s *InvestmentService) FetchStockalHoldings(username, password string) (string, error) {
+	client := stockalAPI.NewClient()
+	ctx := context.Background()
 
-		_, err := client.Login(ctx, kuveraUsername, kuveraPassword)
-		if err == nil {
-			goldPrice, err := client.GetGoldPrice(ctx)
-			if err == nil {
-				return map[string]interface{}{
-					"source":     "kuvera",
-					"gold_price": goldPrice,
-				}, nil
-			}
-		}
+	log.Printf("Logging into Stockal for user: %s", username)
+	_, err := client.Login(ctx, username, password)
+	if err != nil {
+		return "", fmt.Errorf("stockal login failed: %w", err)
 	}
 
-	// TODO: Add other sources for precious metal rates
-	// Could integrate with APIs like:
-	// - metals-api.com
-	// - precious-metals-api.com
-	// - or scrape public sources
+	portfolio, err := client.GetPortfolioDetail(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get portfolio detail: %w", err)
+	}
 
-	return map[string]interface{}{
-		"source": "unavailable",
-		"error":  "No precious metals price source available",
-	}, nil
+	data, err := json.MarshalIndent(portfolio, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to format portfolio detail: %w", err)
+	}
+
+	return string(data), nil
 }

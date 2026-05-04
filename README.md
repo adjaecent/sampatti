@@ -1,130 +1,76 @@
-# Sampatti MCP Server
+# Sampatti
 
-A Model Context Protocol (MCP) server for accessing investment data from Kuvera and Stockal platforms. Built using the [mcp-go](https://github.com/mark3labs/mcp-go) library and inspired by the [Kite MCP server](https://github.com/zerodha/kite-mcp-server) architecture.
+MCP server for accessing investment data from Kuvera (Indian mutual funds) and Stockal (US stocks).
 
-> **Note**: This repository has been refactored from a dashboard application to an MCP server for better integration with AI assistants.
+## Tools
 
-## 🌟 Features
+- `get_kuvera_portfolio` — portfolio value, gains, XIRR, asset breakdown
+- `get_kuvera_holdings` — individual fund details, SIPs, folio numbers
+- `get_gold_price` — current gold buy/sell prices
+- `get_stockal_account` — cash balances, trading restrictions
+- `get_stockal_holdings` — US stock positions, prices, gain/loss
 
-- **Multi-platform support**: Access both Kuvera (mutual funds) and Stockal (US stocks) data
-- **Streaming HTTP endpoints**: Separate streaming endpoints for each platform
-- **Secure authentication**: Web-based credential input with short-lived tokens
-- **Modular architecture**: Separate tools for different platforms
-- **MCP Protocol**: Native support for Model Context Protocol
-
-## Architecture
-
-The server runs as a streaming HTTP server with separate MCP endpoints:
-
-- **Kuvera endpoint**: `http://localhost:8081/mcp-kuvera`
-- **Stockal endpoint**: `http://localhost:8081/mcp-stockal`
-- **Auth UI**: `http://localhost:8080`
-
-Simply start the server and connect your MCP clients to the appropriate endpoints.
-
-## Configuration
-
-Copy `.env.example` to `.env` and configure as needed:
+## Setup
 
 ```bash
 cp .env.example .env
+# Edit .env with your credentials
+
+go build -o sampatti ./cmd/sampatti
+./sampatti
 ```
 
-### Environment Variables
+## Configuration
 
-- `AUTH_PORT`: Port for authentication web UI (default: 8080)
-- `MCP_PORT`: Port for streaming HTTP MCP server (default: 8081)
+See `.env.example` for all options:
 
-## Quick Start
+- `PORT` — server port (default: 8081)
+- `BASE_URL` — public URL for OAuth metadata
+- `DEV_MODE=true` — skip OAuth, use env credentials directly (for local dev)
+- `KUVERA_USERNAME` / `KUVERA_PASSWORD` — Kuvera credentials (dev mode)
+- `STOCKAL_USERNAME` / `STOCKAL_PASSWORD` — Stockal credentials (dev mode)
+- `OAUTH_SECRET` — hex-encoded HMAC secret (production; random if omitted)
 
-1. **Build the server:**
+## Local dev (Claude Code)
+
+```bash
+# Start server with DEV_MODE=true in .env
+go run ./cmd/sampatti
+
+# Add to Claude Code
+claude mcp add --transport http sampatti https://localhost:8081/mcp
+```
+
+## Production (VPS)
+
+1. Generate TLS certs (or use a reverse proxy):
    ```bash
-   go build -o sampatti ./cmd/sampatti
+   mkdir certs
+   # Use certbot, mkcert, or your preferred method
    ```
 
-2. **Start the server:**
-   ```bash
-   ./sampatti
+2. Set `DEV_MODE=false` (or omit it) and configure `BASE_URL` to your public URL.
+
+3. OAuth flow: clients discover auth via `/.well-known/oauth-authorization-server`, register dynamically at `/register`, and authorize at `/authorize` (where users enter platform credentials). Credentials are stored in memory only — never persisted.
+
+4. Connect via the MCP connector API:
+   ```json
+   {
+     "type": "url",
+     "url": "https://your-vps.com/mcp",
+     "name": "sampatti",
+     "authorization_token": "YOUR_OAUTH_TOKEN"
+   }
    ```
-
-3. **Generate auth token:**
-   - Call `auth_request()` tool to get authentication URL
-   - Visit the URL and enter your Kuvera/Stockal credentials
-   - Call `get_auth_token()` with the request ID to get your token
-
-4. **Connect MCP clients:**
-   - Connect to `http://localhost:8081/mcp-kuvera` for Kuvera tools
-   - Connect to `http://localhost:8081/mcp-stockal` for Stockal tools
-   - Use the authentication token with the data tools
 
 ## Architecture
 
 ```
-sampatti/
-├── cmd/sampatti/           # Main entry point
-├── internal/
-│   ├── auth/              # Authentication management
-│   ├── mcp/               # MCP server implementations
-│   │   ├── shared/        # Shared authentication tools
-│   │   ├── kuvera/        # Kuvera-specific MCP server
-│   │   ├── stockal/       # Stockal-specific MCP server
-│   │   └── server.go      # Server manager and routing
-│   ├── service/           # Business logic
-│   └── web/              # Web authentication UI
-└── server/               # Legacy server (deprecated)
+cmd/sampatti/main.go        — entry point
+config/config.go            — env configuration
+internal/oauth/             — OAuth 2.1 (fosite), middleware, authorize UI
+internal/mcp/server.go      — unified MCP server + tool handlers
+internal/service/           — Kuvera/Stockal API calls
 ```
 
-## Tools Available
-
-### Authentication Tools (Available on both endpoints)
-- `auth_request`: Create authentication request and get auth URL
-- `get_auth_token`: Retrieve token after user authorization
-
-### Kuvera Tools (Available at `/mcp-kuvera` endpoint)
-- `get_kuvera_data`: Fetch portfolio and mutual fund holdings
-- `get_gold_silver_rates`: Get gold and silver prices from Kuvera
-
-### Stockal Tools (Available at `/mcp-stockal` endpoint)
-- `get_stockal_data`: Fetch US stock portfolio and positions
-
-## Security
-
-- Credentials are entered through a secure web interface
-- Short-lived authentication tokens (1 month expiry)
-- No credentials stored in environment variables
-- HTTP-only for simplicity
-
-## Development
-
-### Prerequisites
-- Go 1.25+
-- Access to Kuvera and/or Stockal accounts
-
-### Building
-```bash
-go mod download
-go build -o sampatti ./cmd/sampatti
-```
-
-### Testing the Server
-```bash
-# Start the server
-./sampatti
-
-# Test endpoints are available at:
-# - http://localhost:8081/mcp-kuvera (Kuvera tools)
-# - http://localhost:8081/mcp-stockal (Stockal tools)
-# - http://localhost:8080 (Auth UI)
-```
-
-## Deployment
-
-The server runs as a single streaming HTTP service with separate MCP endpoints:
-
-1. **Single deployment**: One server instance serves both platforms
-2. **Separate endpoints**: Connect different clients to different endpoints as needed
-3. **Streaming protocol**: Uses HTTP streaming for real-time MCP communication
-
-## License
-
-This project is licensed under the MIT License.
+Credentials are never written to disk. Server restart clears all OAuth sessions.

@@ -2,76 +2,150 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"net/http"
 
-	"github.com/adjaecent/sampatti/internal/auth"
-	"github.com/adjaecent/sampatti/internal/mcp/kuvera"
-	"github.com/adjaecent/sampatti/internal/mcp/stockal"
+	"github.com/adjaecent/sampatti/internal/oauth"
+	"github.com/adjaecent/sampatti/internal/service"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
-// MCPServer manages the HTTP MCP server with streaming endpoints
-type MCPServer struct {
-	authRequestMgr *auth.AuthRequestManager
-	authPort       string
-
-	// Individual servers
-	kuveraServer  *kuvera.KuveraMCPServer
-	stockalServer *stockal.StockalMCPServer
+// Server is the unified MCP server exposing tools for all platforms.
+type Server struct {
+	mcpServer         *server.MCPServer
+	investmentService *service.InvestmentService
 }
 
-// NewMCPServer creates a new MCP server
-func NewMCPServer(authRequestMgr *auth.AuthRequestManager, authPort string) *MCPServer {
-	return &MCPServer{
-		authRequestMgr: authRequestMgr,
-		authPort:       authPort,
-	}
-}
+// NewServer creates a new unified MCP server with all tools registered.
+func NewServer() *Server {
+	mcpServer := server.NewMCPServer("sampatti", "2.0.0")
+	investmentService := service.NewInvestmentService()
 
-// Run starts the HTTP MCP server with streaming endpoints
-func (m *MCPServer) Run(ctx context.Context, port string) error {
-	// Initialize both servers
-	m.kuveraServer = kuvera.NewKuveraMCPServer(m.authRequestMgr, m.authPort)
-	m.stockalServer = stockal.NewStockalMCPServer(m.authRequestMgr, m.authPort)
-
-	// Create HTTP handlers
-	mux := http.NewServeMux()
-
-	// Create streaming HTTP handlers
-	kuveraHTTPServer := server.NewStreamableHTTPServer(m.kuveraServer.GetMCPServer())
-	stockalHTTPServer := server.NewStreamableHTTPServer(m.stockalServer.GetMCPServer())
-
-	// Route /mcp-kuvera to Kuvera server
-	mux.Handle("/mcp-kuvera", kuveraHTTPServer)
-
-	// Route /mcp-stockal to Stockal server
-	mux.Handle("/mcp-stockal", stockalHTTPServer)
-
-	log.Printf("Starting streaming HTTP MCP server on port %s", port)
-	log.Printf("Kuvera endpoint: http://localhost:%s/mcp-kuvera", port)
-	log.Printf("Stockal endpoint: http://localhost:%s/mcp-stockal", port)
-
-	httpServer := &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+	s := &Server{
+		mcpServer:         mcpServer,
+		investmentService: investmentService,
 	}
 
-	// Start server in goroutine
-	go func() {
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("HTTP server error: %v", err)
-		}
-	}()
-
-	// Wait for context cancellation
-	<-ctx.Done()
-
-	// Graceful shutdown
-	return httpServer.Shutdown(context.Background())
+	s.registerTools()
+	return s
 }
 
-// GetAuthRequestManager returns the auth request manager
-func (m *MCPServer) GetAuthRequestManager() *auth.AuthRequestManager {
-	return m.authRequestMgr
+// GetMCPServer returns the underlying mcp-go server for HTTP handler creation.
+func (s *Server) GetMCPServer() *server.MCPServer {
+	return s.mcpServer
+}
+
+func (s *Server) registerTools() {
+	// Kuvera tools
+	s.mcpServer.AddTool(
+		mcp.NewTool("get_kuvera_portfolio",
+			mcp.WithDescription("Get Kuvera portfolio data including mutual fund holdings, current value, gains, and XIRR. Returns complete portfolio breakdown by asset class."),
+		),
+		s.handleGetKuveraPortfolio,
+	)
+
+	s.mcpServer.AddTool(
+		mcp.NewTool("get_kuvera_holdings",
+			mcp.WithDescription("Get detailed Kuvera mutual fund holdings including individual funds, SIPs, folio numbers, and order history."),
+		),
+		s.handleGetKuveraHoldings,
+	)
+
+	s.mcpServer.AddTool(
+		mcp.NewTool("get_gold_price",
+			mcp.WithDescription("Get current gold buy/sell prices and tax rates from Kuvera."),
+		),
+		s.handleGetGoldPrice,
+	)
+
+	// Stockal tools
+	s.mcpServer.AddTool(
+		mcp.NewTool("get_stockal_account",
+			mcp.WithDescription("Get Stockal account summary including cash balances, trading restrictions, and portfolio value totals."),
+		),
+		s.handleGetStockalAccount,
+	)
+
+	s.mcpServer.AddTool(
+		mcp.NewTool("get_stockal_holdings",
+			mcp.WithDescription("Get detailed Stockal US stock holdings including individual positions, current prices, units, investment amounts, and gain/loss."),
+		),
+		s.handleGetStockalHoldings,
+	)
+}
+
+// --- Kuvera tool handlers ---
+
+func (s *Server) handleGetKuveraPortfolio(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	creds := oauth.CredentialsFromContext(ctx)
+	if creds == nil || creds.Kuvera == nil {
+		return mcp.NewToolResultError("Kuvera credentials not configured. Please re-authorize with Kuvera credentials."), nil
+	}
+
+	data, err := s.investmentService.FetchKuveraPortfolio(creds.Kuvera.Username, creds.Kuvera.Password)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch Kuvera portfolio: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(data), nil
+}
+
+func (s *Server) handleGetKuveraHoldings(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	creds := oauth.CredentialsFromContext(ctx)
+	if creds == nil || creds.Kuvera == nil {
+		return mcp.NewToolResultError("Kuvera credentials not configured. Please re-authorize with Kuvera credentials."), nil
+	}
+
+	data, err := s.investmentService.FetchKuveraHoldings(creds.Kuvera.Username, creds.Kuvera.Password)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch Kuvera holdings: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(data), nil
+}
+
+func (s *Server) handleGetGoldPrice(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	creds := oauth.CredentialsFromContext(ctx)
+	if creds == nil || creds.Kuvera == nil {
+		return mcp.NewToolResultError("Kuvera credentials not configured. Please re-authorize with Kuvera credentials."), nil
+	}
+
+	data, err := s.investmentService.FetchGoldPrice(creds.Kuvera.Username, creds.Kuvera.Password)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch gold price: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(data), nil
+}
+
+// --- Stockal tool handlers ---
+
+func (s *Server) handleGetStockalAccount(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	creds := oauth.CredentialsFromContext(ctx)
+	if creds == nil || creds.Stockal == nil {
+		return mcp.NewToolResultError("Stockal credentials not configured. Please re-authorize with Stockal credentials."), nil
+	}
+
+	data, err := s.investmentService.FetchStockalAccount(creds.Stockal.Username, creds.Stockal.Password)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch Stockal account: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(data), nil
+}
+
+func (s *Server) handleGetStockalHoldings(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	creds := oauth.CredentialsFromContext(ctx)
+	if creds == nil || creds.Stockal == nil {
+		return mcp.NewToolResultError("Stockal credentials not configured. Please re-authorize with Stockal credentials."), nil
+	}
+
+	data, err := s.investmentService.FetchStockalHoldings(creds.Stockal.Username, creds.Stockal.Password)
+	if err != nil {
+		log.Printf("Failed to fetch Stockal holdings: %v", err)
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch Stockal holdings: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(data), nil
 }
