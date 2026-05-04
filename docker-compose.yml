@@ -9,8 +9,14 @@ services:
       - PORT=8081
       - BASE_URL=${BASE_URL:-https://sampatti.example.com}
       - OAUTH_SECRET=${OAUTH_SECRET:-}
+    networks:
+      - shared
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/.well-known/oauth-authorization-server"]
       interval: 30s
       timeout: 5s
       retries: 3
+
+networks:
+  shared:
+    external: true
