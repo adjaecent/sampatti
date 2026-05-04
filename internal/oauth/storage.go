@@ -12,7 +12,8 @@ import (
 )
 
 // MemoryStore implements fosite's storage interfaces with in-memory maps.
-// All data is lost on server restart — this is intentional for security.
+// OAuth artifacts are lost on restart. Credentials can survive restarts
+// via an encrypted cache on /dev/shm (tmpfs).
 type MemoryStore struct {
 	mu sync.RWMutex
 
@@ -25,6 +26,9 @@ type MemoryStore struct {
 
 	// User credentials keyed by subject ID
 	credentials map[string]*Credentials
+
+	// Encrypted tmpfs cache for credentials
+	credCache *CredCache
 }
 
 // StoreData wraps a fosite.Requester with a creation timestamp for expiry tracking.
@@ -34,24 +38,41 @@ type StoreData struct {
 }
 
 // NewMemoryStore creates a new in-memory store.
-func NewMemoryStore() *MemoryStore {
+// If secret is provided, credentials are cached encrypted on /dev/shm
+// and restored on startup.
+func NewMemoryStore(secret []byte) *MemoryStore {
+	cache := NewCredCache(secret)
+
+	creds := make(map[string]*Credentials)
+	if restored := cache.Load(); restored != nil {
+		creds = restored
+	}
+
 	return &MemoryStore{
 		clients:       make(map[string]*fosite.DefaultClient),
 		authCodes:     make(map[string]StoreData),
 		accessTokens:  make(map[string]StoreData),
 		refreshTokens: make(map[string]StoreData),
 		pkceRequests:  make(map[string]fosite.Requester),
-		credentials:   make(map[string]*Credentials),
+		credentials:   creds,
+		credCache:     cache,
 	}
 }
 
 // --- Credential management ---
 
 // StoreCredentials stores credentials keyed by subject ID.
+// Also persists encrypted to /dev/shm if a cache is configured.
 func (s *MemoryStore) StoreCredentials(subject string, creds *Credentials) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.credentials[subject] = creds
+	snapshot := make(map[string]*Credentials, len(s.credentials))
+	for k, v := range s.credentials {
+		snapshot[k] = v
+	}
+	s.mu.Unlock()
+
+	s.credCache.Save(snapshot)
 }
 
 // GetCredentials retrieves credentials by subject ID.

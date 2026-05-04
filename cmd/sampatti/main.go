@@ -21,7 +21,7 @@ func main() {
 	config.Load()
 
 	// Initialize OAuth infrastructure
-	store := oauth.NewMemoryStore()
+	store := oauth.NewMemoryStore(config.C.Secret)
 	provider := oauth.NewOAuthProvider(store, config.C.Secret)
 	oauthHandlers := oauth.NewHandlers(provider, store, config.C.BaseURL)
 
