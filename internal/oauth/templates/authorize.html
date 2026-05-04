@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sampatti - Authorize</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic" />
-    <style>body { max-width: 480px; margin: 2rem auto; padding: 0 1rem; }</style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/milligram/dist/milligram.min.css" />
   </head>
   <body>
+    <div class="container">
     <h1>Sampatti</h1>
     <p>
       Enter your investment platform credentials to authorize access. Configure
@@ -43,11 +43,12 @@
         <input type="password" id="stockal_password" name="stockal_password" />
       </fieldset>
 
-      <button type="submit">Authorize</button>
+      <button class="button" type="submit">Authorize</button>
     </form>
 
     <p>
       <small>Credentials are never persisted to disk. Server restart clears all data.</small>
     </p>
+    </div>
   </body>
 </html>
