@@ -40,11 +40,9 @@ func main() {
 
 	// MCP endpoint
 	if config.C.DevMode {
-		// Dev mode: inject credentials from env, no OAuth required
 		log.Println("DEV MODE: OAuth disabled, using credentials from environment")
 		mux.Handle("/mcp", oauth.DevMiddleware(config.C.DevCredentials, mcpHTTPServer))
 	} else {
-		// Production: protected by OAuth middleware
 		mux.Handle("/mcp", oauth.AuthMiddleware(provider, store, config.C.BaseURL, mcpHTTPServer))
 	}
 
@@ -62,7 +60,7 @@ func main() {
 
 	// Wrap with request logging
 	logged := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[%s] %s %s (Origin: %s)", r.Method, r.URL.Path, r.URL.RawQuery, r.Header.Get("Origin"))
+		log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.URL.RawQuery)
 		mux.ServeHTTP(w, r)
 	})
 
@@ -73,20 +71,10 @@ func main() {
 
 	log.Printf("Sampatti MCP server starting on port %s", config.C.Port)
 	log.Printf("MCP endpoint: %s/mcp", config.C.BaseURL)
-	log.Printf("OAuth metadata: %s/.well-known/oauth-authorization-server", config.C.BaseURL)
 
-	// Start server
+	// Plain HTTP — TLS termination handled by reverse proxy (Caddy)
 	go func() {
-		var err error
-		// Try TLS first, fall back to plain HTTP
-		if _, certErr := os.Stat("certs/cert.pem"); certErr == nil {
-			log.Println("Starting with TLS (certs/cert.pem, certs/key.pem)")
-			err = httpServer.ListenAndServeTLS("certs/cert.pem", "certs/key.pem")
-		} else {
-			log.Println("Starting without TLS (no certs found)")
-			err = httpServer.ListenAndServe()
-		}
-		if err != nil && err != http.ErrServerClosed {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()

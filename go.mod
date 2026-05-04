@@ -3,8 +3,8 @@ module github.com/adjaecent/sampatti
 go 1.25.0
 
 require (
-	github.com/adjaecent/unofficial-kuvera-api v0.0.0-20241008000000-000000000000
-	github.com/adjaecent/unofficial-stockal-api v0.0.0-20241008000000-000000000000
+	github.com/adjaecent/unofficial-kuvera-api v0.0.0-20260504071034-357df3107c3d
+	github.com/adjaecent/unofficial-stockal-api v0.0.0-20260504071033-c0d0cc88cae9
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.42.0
 	github.com/ory/fosite v0.49.0
@@ -92,7 +92,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/adjaecent/unofficial-kuvera-api => ../unofficial-kuvera-api
-
-replace github.com/adjaecent/unofficial-stockal-api => ../unofficial-stockal-api

@@ -1,0 +1,21 @@
+services:
+  sampatti:
+    build: .
+    container_name: sampatti
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - BASE_URL=${BASE_URL:-https://sampatti.example.com}
+      - DEV_MODE=${DEV_MODE:-false}
+      - KUVERA_USERNAME=${KUVERA_USERNAME:-}
+      - KUVERA_PASSWORD=${KUVERA_PASSWORD:-}
+      - STOCKAL_USERNAME=${STOCKAL_USERNAME:-}
+      - STOCKAL_PASSWORD=${STOCKAL_PASSWORD:-}
+      - OAUTH_SECRET=${OAUTH_SECRET:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/.well-known/oauth-authorization-server"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
