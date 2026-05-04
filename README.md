@@ -47,9 +47,13 @@ claude mcp add --transport http sampatti https://localhost:8081/mcp
 
 2. Set `DEV_MODE=false` (or omit it) and configure `BASE_URL` to your public URL.
 
-3. OAuth flow: clients discover auth via `/.well-known/oauth-authorization-server`, register dynamically at `/register`, and authorize at `/authorize` (where users enter platform credentials). Credentials are stored in memory only — never persisted.
+3. OAuth flow: clients discover auth via `/.well-known/oauth-authorization-server`, register dynamically at `/register`, and authorize at `/authorize` (where users enter platform credentials).
 
 4. Add as an MCP connector in Claude (or any MCP client) pointing to `https://your-domain.com/mcp`.
+
+## Credential storage
+
+Credentials and OAuth sessions are never written to disk. They are encrypted (AES-256-GCM, keyed from `OAUTH_SECRET`) and stored on `/dev/shm` — host memory backed by tmpfs. This means they survive process restarts and container recreation, but are wiped on host reboot. The Docker container bind-mounts the host's `/dev/shm` for this purpose.
 
 ## Architecture
 
@@ -60,5 +64,3 @@ internal/oauth/             — OAuth 2.1 (fosite), middleware, authorize UI
 internal/mcp/server.go      — unified MCP server + tool handlers
 internal/service/           — Kuvera/Stockal API calls
 ```
-
-Credentials are never written to disk. Server restart clears all OAuth sessions.
