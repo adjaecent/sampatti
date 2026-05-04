@@ -1,6 +1,6 @@
 # Sampatti
 
-MCP server for accessing investment data from Kuvera (Indian mutual funds) and Stockal (US stocks).
+MCP server for accessing investment data from [Kuvera](https://github.com/adjaecent/unofficial-kuvera-api) (Indian mutual funds) and [Stockal](https://github.com/adjaecent/unofficial-stockal-api) (US stocks).
 
 ## Tools
 
@@ -43,25 +43,13 @@ claude mcp add --transport http sampatti https://localhost:8081/mcp
 
 ## Production (VPS)
 
-1. Generate TLS certs (or use a reverse proxy):
-   ```bash
-   mkdir certs
-   # Use certbot, mkcert, or your preferred method
-   ```
+1. Deploy behind a reverse proxy (e.g. Caddy) for TLS termination.
 
 2. Set `DEV_MODE=false` (or omit it) and configure `BASE_URL` to your public URL.
 
 3. OAuth flow: clients discover auth via `/.well-known/oauth-authorization-server`, register dynamically at `/register`, and authorize at `/authorize` (where users enter platform credentials). Credentials are stored in memory only — never persisted.
 
-4. Connect via the MCP connector API:
-   ```json
-   {
-     "type": "url",
-     "url": "https://your-vps.com/mcp",
-     "name": "sampatti",
-     "authorization_token": "YOUR_OAUTH_TOKEN"
-   }
-   ```
+4. Add as an MCP connector in Claude (or any MCP client) pointing to `https://your-domain.com/mcp`.
 
 ## Architecture
 

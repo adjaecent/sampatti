@@ -12,6 +12,7 @@ import (
 	"github.com/adjaecent/sampatti/config"
 	"github.com/adjaecent/sampatti/internal/mcp"
 	"github.com/adjaecent/sampatti/internal/oauth"
+	"github.com/adjaecent/sampatti/static"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -30,6 +31,10 @@ func main() {
 
 	// Set up HTTP routes
 	mux := http.NewServeMux()
+
+	// Static assets
+	mux.HandleFunc("/favicon.ico", serveFavicon)
+	mux.HandleFunc("/favicon.png", serveFavicon)
 
 	// OAuth endpoints
 	mux.HandleFunc("/.well-known/oauth-authorization-server", oauthHandlers.HandleMetadata)
@@ -82,4 +87,10 @@ func main() {
 	<-ctx.Done()
 	httpServer.Shutdown(context.Background())
 	log.Println("Sampatti stopped")
+}
+
+func serveFavicon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Write(static.FaviconPNG)
 }

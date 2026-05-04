@@ -2,5 +2,5 @@
 .env
 certs/
 .idea/
-sampatti
-sampatti-minimal
+/sampatti
+/sampatti-minimal
